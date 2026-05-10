@@ -3,7 +3,7 @@
 GameUI::GameUI() {
     window.create(sf::VideoMode({500, 650}), "2048", sf::Style::Titlebar | sf::Style::Close);
     window.setFramerateLimit(60);
-
+    window.setKeyRepeatEnabled(false);
     font.openFromFile("comicbd.ttf");
 }
 

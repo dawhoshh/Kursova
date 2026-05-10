@@ -3,9 +3,9 @@
 #include <ctime>
 #include <vector>
 #include <fstream>
+#include <iostream>
 
 GameLogic::GameLogic() {
-
     std::srand(std::time(nullptr));
     reset();
 }
@@ -266,16 +266,38 @@ void GameLogic::loadGame() {
     std::ifstream inFile("save.txt");
     if (inFile.is_open()) {
         inFile >> score >> keepPlayingAfterWin;
+
         bool isEmpty = true;
+        bool isDataCorrupted = false;
+
+        // Рахунок не може бути від'ємним
+        if (score < 0) isDataCorrupted = true;
+
         for (int i = 0; i < 4; ++i) {
             for (int j = 0; j < 4; ++j) {
                 inFile >> board[i][j];
-                if (board[i][j] != 0) isEmpty = false;
+                int val = board[i][j];
+
+                if (val != 0) isEmpty = false;
+
+                if (val < 0 || (val != 0 && (val & (val - 1)) != 0)) {
+                    isDataCorrupted = true;
+                }
             }
         }
+
+        if (inFile.fail() || isDataCorrupted) {
+            std::cerr << "\n[SYSTEM MESSAGE]\n";
+            std::cerr << "The save file 'save.txt' is corrupt or contains impossible tile values!\n";
+            std::cerr << "To avoid logic errors, the game has been reset to its original state.\n\n";
+
+            inFile.close();
+            reset();
+            return;
+        }
+
         inFile.close();
 
-        // Якщо файл виявився порожнім або пошкодженим - нове поле
         if (isEmpty) {
             reset();
         }
