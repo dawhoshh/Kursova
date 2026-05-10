@@ -1,4 +1,7 @@
 #include "GameController.h"
+#include <chrono>
+#include <iostream>
+#include <iomanip>
 
 GameController::GameController(GameLogic &logic, GameUI &ui)
     : game(logic), ui(ui), activeBotMode(0), activeBot(nullptr) {
@@ -63,6 +66,12 @@ void GameController::handleEvents() {
                         keyPress->code == sf::Keyboard::Key::Down) { moved = game.moveDown(); }
 
                     if (moved) {
+                        float thinkTime = playerInputTimer.getElapsedTime().asSeconds();
+
+                        std::cout << "[Analytics] Human       | Time: "
+                                  << std::fixed << std::setprecision(2) << thinkTime << " s   "
+                                  << "| Score: " << game.getScore() << "\n";
+
                         playerInputTimer.restart();
                     }
                 }
@@ -74,8 +83,26 @@ void GameController::handleEvents() {
 void GameController::updateBot() {
     if (activeBot != nullptr && !game.isGameOver() && !game.hasWon()) {
         if (botTimer.getElapsedTime().asSeconds() > 0.15f) {
+
+            // 1. Засікаємо час ДО початку розрахунків бота
+            auto start = std::chrono::high_resolution_clock::now();
+
+            // Бот "думає" (тут працює Жадібний або Монте-Карло)
             MoveDirection move = activeBot->getBestMove(game);
 
+            // 2. Засікаємо час ПІСЛЯ того, як бот прийняв рішення
+            auto end = std::chrono::high_resolution_clock::now();
+
+            // 3. Рахуємо різницю в мілісекундах
+            std::chrono::duration<double, std::milli> ms_double = end - start;
+
+            // 4. Красиво виводимо статистику в термінал
+            std::string botName = (activeBotMode == 1) ? "Greedy     " : "Monte-Carlo";
+            std::cout << "[Analytics] " << botName
+                      << " | Time: " << std::fixed << std::setprecision(2) << ms_double.count() << " ms"
+                      << " | Score: " << game.getScore() << "\n";
+
+            // 5. Робимо реальний хід на дошці
             if (move == MoveDirection::Left) game.moveLeft();
             else if (move == MoveDirection::Right) game.moveRight();
             else if (move == MoveDirection::Up) game.moveUp();
